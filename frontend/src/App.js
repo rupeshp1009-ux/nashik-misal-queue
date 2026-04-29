@@ -1,23 +1,35 @@
-import logo from './logo.svg';
-import './App.css';
+import { useState } from "react";
 
 function App() {
+  const [image, setImage] = useState(null);
+  const [url, setUrl] = useState("");
+
+  const handleUpload = async () => {
+    const formData = new FormData();
+    formData.append("image", image);
+
+    const res = await fetch("https://nashik-misal-queue.onrender.com/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    setUrl(data.url);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div style={{ textAlign: "center", marginTop: "50px" }}>
+      <h2>Upload Image</h2>
+
+      <input type="file" onChange={(e) => setImage(e.target.files[0])} />
+
+      <br /><br />
+
+      <button onClick={handleUpload}>Upload</button>
+
+      <br /><br />
+
+      {url && <img src={url} alt="uploaded" width="300" />}
     </div>
   );
 }
