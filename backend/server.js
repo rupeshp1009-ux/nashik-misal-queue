@@ -2,44 +2,44 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import cloudinary from "./cloudinary.js";
-import 'dotenv/config';
+import "dotenv/config";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// 🔥 DEBUG: Check if env variables are loading
-console.log("Cloud Name:", process.env.CLOUDINARY_CLOUD_NAME);
-console.log("API Key:", process.env.CLOUDINARY_API_KEY);
-
-// 🔹 Multer config
-const upload = multer({ dest: "uploads/" });
+// 🔥 Use memory storage (IMPORTANT FIX)
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 // 🔹 Health check
 app.get("/", (req, res) => {
   res.send("API running...");
 });
 
-// 🔹 Upload API (SAFE VERSION)
+// 🔹 Upload API (BUFFER BASED)
 app.post("/upload", upload.single("image"), async (req, res) => {
   try {
-    // 🔥 Check if file exists
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      resource_type: "auto"
-    });
+    // 🔥 Convert buffer → base64
+    const b64 = Buffer.from(req.file.buffer).toString("base64");
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
 
-    res.json({
-      url: result.secure_url
-    });
+    const result = await cloudinary.uploader.upload(dataURI);
 
+    return res.json({
+      url: result.secure_url,
+    });
   } catch (err) {
     console.error("Upload error:", err);
-    res.status(500).json({ error: "Upload failed" });
+
+    return res.status(500).json({
+      error: err.message || "Upload failed",
+    });
   }
 });
 
